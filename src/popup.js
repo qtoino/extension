@@ -3,8 +3,57 @@
 
 const inputElement = document.getElementById('text');
 const outputElement = document.getElementById('output');
-const buttonElement = document.getElementById('scanhtml');
-const matchingfieldsButton = document.getElementById('matchingfields');
+const scanButton = document.getElementById('scanhtml');
+const matchingfieldsButton = document.getElementById('matchingfields');   
+const fillformButton = document.getElementById('fillform');
+
+// Event listener for the button click
+fillformButton.addEventListener('click', async () => {
+
+    try {
+        // Get the current active tab.
+        const [activeTab] = await chrome.tabs.query({active: true, currentWindow: true});
+        
+        console.log("Found active tab:", activeTab);
+
+        // Send a greeting message to the content script of the active tab.
+        const response = await chrome.tabs.sendMessage(activeTab.id, {greeting: "extractFields"});
+        
+        console.log("Received response from content script:", response);
+
+        if (!response) {
+            console.error("No response received from content script.");
+            return;
+        }
+
+        if (response.farewell === "extractionSuccessful") {
+            console.log("Received form fields from content script:", response.fields);
+
+            // Check the current text in the textbox
+            const text = inputElement.value;
+
+            // Bundle the input data into a message
+            const message = {
+                action: 'fillForm',
+                data: response.fields,
+                text: text,
+            }
+
+            // Send the extracted fields to the background script
+            chrome.runtime.sendMessage(message, (backgroundResponse) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Error while sending message to background:", chrome.runtime.lastError);
+                    return;
+                }
+                console.log("Response from background:", backgroundResponse);
+            });
+        } else {
+            console.error("Unexpected response from content script:", response);
+        }
+    } catch (error) {
+        console.error("Failed to send message:", error);
+    }
+});
 
 // Event listener for the button click
 matchingfieldsButton.addEventListener('click', () => {
@@ -27,7 +76,7 @@ matchingfieldsButton.addEventListener('click', () => {
 
 
 // Event listener for the button click
-buttonElement.addEventListener('click', async () => {
+scanButton.addEventListener('click', async () => {
     console.log("Button was clicked!");
 
     try {

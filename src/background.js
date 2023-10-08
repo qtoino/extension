@@ -16,11 +16,17 @@ env.allowLocalModels = false;
 env.backends.onnx.wasm.numThreads = 1;
 
 // Process the HTML data received from the popup
-let htmlData
 let inputJson
 
 // Create generic classify function, which will be reused for the different types of events.
-const classify = async () => {
+const classify = async (inputJson, debug = false) => {
+    // Retrieve the stored fields from chrome.storage.local
+    let htmlData = await new Promise((resolve) => {
+        chrome.storage.local.get('storedFields', (result) => {
+            resolve(result.storedFields);
+        });
+    });
+
     // Check if htmlData is provided and if it's an array with content
     if (!Array.isArray(htmlData) || htmlData.length === 0) {
         console.error("htmlData is either missing or empty.");
@@ -33,20 +39,72 @@ const classify = async () => {
     // Extract the 'html' properties from each item in the htmlData array
     const htmlInputs = htmlData.map(item => item.html);
     console.log(htmlInputs)
+
+    // Extract the 'id' properties from each item in the htmlData array
+    const htmlIds = htmlData.map(item => item.id);
+    console.log(htmlIds)
+
     // Get the keys from the classes object
     const classKeys = Object.keys(inputJson);
+    classKeys.push("button");
+    classKeys.push("submit");
     console.log(classKeys)
+
     // Initialize an array to hold the results
     let results = [];
+    let winningLabels = [];
 
     // Loop through each htmlInput and classify it
-    for (const input of htmlInputs) {
+    for (const [index, input] of htmlInputs.entries()) {
         let result = await pipe(input, classKeys);
         results.push(result);
+        // Push an object with the winning label and its associated id
+        winningLabels.push({
+            label: result.labels[0],
+            id: htmlIds[index]
+        });
+    }
+  
+    if (debug === true) {
+        return results
+    } else {
+        return winningLabels;
+    }
+};
+
+function generatePipelineInstruction(winningLabels, userData) {
+    const instructions = [];
+
+    for (const item of winningLabels) {
+        const label = item.label;
+        const id = item.id;
+        // Determine the type based on the label
+        let type = "fillText"; // default type
+        console.log(label);
+        if (label === "button" || label === "submit") {
+            type = "clickButton";
+        }
+
+        // Create the selector based on the id
+        const selector = `#${id}`;
+        
+        // Create the object
+        const obj = {
+            type: type,
+            selector: selector
+        };
+
+        // If it's not a button, add the text property
+        if (type !== "clickButton") {
+            // Get the value from the classes object
+            obj.text = userData[label];
+        }
+
+        instructions.push(obj);
     }
 
-    return results;
-};
+    return instructions;
+}
 
 //////////////////////////////////////////////////////////////
 
@@ -57,11 +115,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "storeFields") {
         console.log("Received form fields in background script:", message);
 
-        htmlData = message.data;
+        // Store the fields using chrome.storage.local
+        chrome.storage.local.set({ 'storedFields': message.data }, () => {
+            console.log("Fields stored successfully!");
+        });
         
-        // Respond back to the sender if needed
-        sendResponse({status: "Fields received and processed!"});
-        // sendResponse(JSON.stringify(htmlData, null, 4));
+        // Respond back to the sender
+        sendResponse({status: "Fields received and stored!"});
     } else if (message.action === "matchfields") {
         // Check if message.text is in JSON format
         try {
@@ -75,7 +135,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Run model prediction asynchronously
         (async function () {
             // Assuming you've already defined the classify function elsewhere
-            let result = await classify();
+            let result = await classify(inputJson, true);
 
             // Send classification result back
             sendResponse(result);
@@ -83,6 +143,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         
         // Return true to indicate we will send a response asynchronously
         return true;
+    } else if (message.action === "fillForm") {
+        // Check if message.text is in JSON format
+        try {
+            inputJson = JSON.parse(message.text);
+        } catch (error) {
+            console.error("Provided text is not in JSON format:", error);
+            // Handle this error appropriately or simply return
+            return;
+        }
+
+        console.log("Received form fields in background script:", message);
+
+        (async function() {
+            // Run model prediction asynchronously
+            const result = await classify(inputJson, false);
+        
+            // Send classification result back
+            sendResponse(result);
+        
+            // Generate pipeline instruction
+            let instructions = generatePipelineInstruction(result, inputJson);
+        })();
+        
+
+        // Return true to indicate we will send a response asynchronously
+        return true;
+        
     }
 });
 

@@ -52,12 +52,17 @@ function extractFormFields() {
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log(sender.tab ? "from a popup:" + sender.tab.url : "from the extension");
+    console.log("Received message in content.js from:", sender.tab ? sender.tab.url : "the extension");
 
     if (request.greeting === "extractFields") {
+        console.log("Processing 'extractFields' request in content.js...");
+
         // Extract form fields and send them as a response.
         const fields = extractFormFields();
+        console.log("Extracted fields in content.js:", fields);
         sendResponse({farewell: "extractionSuccessful", fields: fields});
+    } else {
+        console.log("Unknown request received in content.js:", request);
     }
     return true; // indicates the response is sent asynchronously
 });

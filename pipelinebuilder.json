@@ -1,0 +1,36 @@
+[
+    {
+        "type": "fillText",
+        "selector": "input#name",
+        "text": "John Doe"
+    },
+    {
+        "type": "fillText",
+        "selector": "input#email",
+        "text": "john.doe@example.com"
+    },
+    {
+        "type": "fillText",
+        "selector": "input#location",
+        "text": "New York"
+    },
+    {
+        "type": "fillText",
+        "selector": "input#github",
+        "text": "https://github.com/johndoe"
+    },
+    {
+        "type": "fillText",
+        "selector": "input#linkedin",
+        "text": "https://www.linkedin.com/in/johndoe"
+    },
+    {
+        "type": "fillText",
+        "selector": "input#phone",
+        "text": "123-456-7890"
+    },
+    {
+        "type": "clickButton",
+        "selector": "#submit"
+    }
+]

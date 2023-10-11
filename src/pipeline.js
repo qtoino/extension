@@ -77,7 +77,7 @@ class ClickButtonBlock extends Block {
 }
 
 
-class Pipeline {
+export class FillPipeline {
     constructor() {
         this.blocks = [];
     }

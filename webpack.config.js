@@ -15,6 +15,7 @@ const config = {
         popup: './src/popup.js',
         content: './src/content.js',
         domUtils: './src/domUtils.js',
+        pipeline: './src/pipeline.js', 
     },
     output: {
         path: path.resolve(__dirname, 'build'),
@@ -34,6 +35,10 @@ const config = {
                 {
                     from: "src/popup.css",
                     to: "popup.css"
+                },
+                {
+                    from: "src/pipeline.js", 
+                    to: "pipeline.js"         
                 }
             ],
         })

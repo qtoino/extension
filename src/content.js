@@ -1,6 +1,8 @@
 // content.js - the content scripts which is run in the context of web pages, and has access
 // to the DOM and other web APIs.
 
+import { FillPipeline } from "./pipeline.js";
+
 console.log("Chrome extension go")
 
 function extractFormFields() {
@@ -52,20 +54,39 @@ function extractFormFields() {
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log("Received message in content.js from:", sender.tab ? sender.tab.url : "the extension");
+    (async () => {
+        console.log("Received message in content.js from:", sender.tab ? sender.tab.url : "the extension");
 
-    if (request.greeting === "extractFields") {
-        console.log("Processing 'extractFields' request in content.js...");
+        if (request.greeting === "extractFields") {
+            console.log("Processing 'extractFields' request in content.js...");
 
-        // Extract form fields and send them as a response.
-        const fields = extractFormFields();
-        console.log("Extracted fields in content.js:", fields);
-        sendResponse({farewell: "extractionSuccessful", fields: fields});
-    } else {
-        console.log("Unknown request received in content.js:", request);
-    }
+            // Extract form fields and send them as a response.
+            const fields = extractFormFields();
+            console.log("Extracted fields in content.js:", fields);
+            sendResponse({farewell: "extractionSuccessful", fields: fields});
+        } else if (request.action === "fillForm") {
+            console.log("Processing 'fillForm' request in content.js...");
+
+            // Assuming 'instructions' is passed in the request
+            const instructions = request.instructions;
+
+            // Create and populate the pipeline
+            const fillpipeline = new FillPipeline();
+            fillpipeline.createPipelineFromJson(instructions);
+
+            // Execute the pipeline
+            await fillpipeline.run();
+
+            // Optionally, send a response back
+            sendResponse({status: "Form filled successfully"});
+        } else {
+            console.log("Unknown request received in content.js:", request);
+        }
+    })();
+
     return true; // indicates the response is sent asynchronously
 });
+
 
 
 

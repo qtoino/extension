@@ -34,18 +34,21 @@ fillformButton.addEventListener('click', async () => {
 
             // Bundle the input data into a message
             const message = {
-                action: 'fillForm',
+                action: 'fillFormInstructions',
                 data: response.fields,
                 text: text,
             }
 
             // Send the extracted fields to the background script
-            chrome.runtime.sendMessage(message, (backgroundResponse) => {
+            chrome.runtime.sendMessage(message, async (backgroundResponse) => {
                 if (chrome.runtime.lastError) {
                     console.error("Error while sending message to background:", chrome.runtime.lastError);
                     return;
                 }
                 console.log("Response from background:", backgroundResponse);
+                
+                const fillFormResponse = await chrome.tabs.sendMessage(activeTab.id, {action: "fillForm", instructions: backgroundResponse});
+                console.log("Response from fillForm action:", fillFormResponse);
             });
         } else {
             console.error("Unexpected response from content script:", response);

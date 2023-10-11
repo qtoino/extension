@@ -143,7 +143,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         
         // Return true to indicate we will send a response asynchronously
         return true;
-    } else if (message.action === "fillForm") {
+    } else if (message.action === "fillFormInstructions") {
         // Check if message.text is in JSON format
         try {
             inputJson = JSON.parse(message.text);
@@ -158,12 +158,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         (async function() {
             // Run model prediction asynchronously
             const result = await classify(inputJson, false);
-        
-            // Send classification result back
-            sendResponse(result);
+    
         
             // Generate pipeline instruction
             let instructions = generatePipelineInstruction(result, inputJson);
+
+            // Send instructions result back
+            sendResponse(instructions);
+
         })();
         
 

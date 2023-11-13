@@ -50,3 +50,19 @@ body {
     font-family: 'Roboto Mono', monospace;
     height: 100px;
 }
+
+/* Rest of your CSS stays the same */
+
+/* Style for the buttons, now targeting input elements */
+#fetchHtml, #pasteHTML {
+    width: 50%; /* Each button takes up half the width */
+    box-sizing: border-box; /* Include padding and borders in the element's total width and height */
+    float: left; /* Align buttons side by side */
+}
+
+/* Clear float */
+.clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+}

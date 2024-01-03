@@ -52,6 +52,10 @@ function extractFormFields() {
     return fields;
 }
 
+function getHTMLContent() {
+    return document.documentElement.outerHTML;
+}
+
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     (async () => {
@@ -79,6 +83,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             // Optionally, send a response back
             sendResponse({status: "Form filled successfully"});
+        } else if (request.action === "getHTMLContent") {
+            console.log("Processing 'getHTMLContent' request in content.js...");
+
+            // Get HTML content and send it as a response.
+            const htmlContent = getHTMLContent();
+            console.log("Extracted HTML content in content.js:", htmlContent);
+            sendResponse({action: "htmlContentReceived", htmlContent: htmlContent});
         } else {
             console.log("Unknown request received in content.js:", request);
         }

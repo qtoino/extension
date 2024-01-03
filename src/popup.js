@@ -6,6 +6,7 @@ const outputElement = document.getElementById('output');
 const scanButton = document.getElementById('scanhtml');
 const matchingfieldsButton = document.getElementById('matchingfields');   
 const fillformButton = document.getElementById('fillform');
+const processMarkupLMButton = document.getElementById('processMarkupLM');
 
 // Event listener for the button click
 fillformButton.addEventListener('click', async () => {
@@ -29,6 +30,15 @@ fillformButton.addEventListener('click', async () => {
         if (response.farewell === "extractionSuccessful") {
             console.log("Received form fields from content script:", response.fields);
 
+            // Send the extracted fields to the background script
+            chrome.runtime.sendMessage({action: "storeFields", data: response.fields}, (backgroundResponse) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Error while sending message to background:", chrome.runtime.lastError);
+                    return;
+                }
+                console.log("Response from background:", backgroundResponse);
+            });
+            
             // Check the current text in the textbox
             const text = inputElement.value;
 
@@ -112,6 +122,27 @@ scanButton.addEventListener('click', async () => {
         } else {
             console.error("Unexpected response from content script:", response);
         }
+    } catch (error) {
+        console.error("Failed to send message:", error);
+    }
+});
+
+// Event listener for the processMarkupLM button click
+processMarkupLMButton.addEventListener('click', async () => {
+    console.log("Process with MarkupLM button was clicked!");
+
+    try {
+        // Send a message to the background script to trigger MarkupLM processing
+        chrome.runtime.sendMessage({action: "processWithMarkupLM"}, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error("Error while sending message to background:", chrome.runtime.lastError);
+                return;
+            }
+            console.log("Response from MarkupLM processing:", response);
+
+            // Update the popup's UI with the MarkupLM processing result
+            outputElement.innerText = JSON.stringify(response, null, 2);
+        });
     } catch (error) {
         console.error("Failed to send message:", error);
     }

@@ -72,6 +72,36 @@ const classify = async (inputJson, debug = false) => {
     }
 };
 
+// Define a new action to get HTML content
+const getHTMLContent = async () => {
+    // Get the active tab
+    const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+    const currentTab = tabs[0];
+
+    // Send a message to the content script to get the HTML content
+    return new Promise((resolve, reject) => {
+        chrome.tabs.sendMessage(currentTab.id, {action: "getHTMLContent"}, (response) => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve(response.htmlContent);
+            }
+        });
+    });
+};
+
+// Function to communicate with MarkupLM server
+const processHTMLWithMarkupLM = async (htmlContent) => {
+    const response = await fetch('http://0.0.0.0:2000/process-html', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ html_content: htmlContent })
+    });
+    return response.json();
+};
+
 function generatePipelineInstruction(winningLabels, userData) {
     const instructions = [];
 
@@ -172,6 +202,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Return true to indicate we will send a response asynchronously
         return true;
         
+    } else if (message.action === "processWithMarkupLM") {
+
+        (async function() {
+            // Get HTML content from the active tab
+            const htmlContent = await getHTMLContent();
+
+            // Send HTML content to MarkupLM server for processing
+            const markupLMResult = await processHTMLWithMarkupLM(htmlContent);
+
+            // Send MarkupLM result back
+            sendResponse(markupLMResult);
+        })();
+        
+        return true;
     }
 });
 
